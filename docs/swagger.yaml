@@ -1,0 +1,19 @@
+info:
+  contact: {}
+  title: RpsChecked
+  version: "0.01"
+paths:
+  /sites:
+    get:
+      parameters:
+      - description: Your query
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      summary: Calculate sites rps by query
+      tags:
+      - SitesController
+swagger: "2.0"
