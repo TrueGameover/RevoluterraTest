@@ -1,10 +1,13 @@
 package sites
 
 import (
-	"RevoluterraTest/parser/domain"
+	infrastructure2 "RevoluterraTest/benchmark/infrastructure"
+	repository2 "RevoluterraTest/benchmark/repository"
+	service2 "RevoluterraTest/benchmark/service"
 	"RevoluterraTest/parser/infrastructure"
 	"RevoluterraTest/parser/repository"
 	"RevoluterraTest/parser/service"
+	context2 "context"
 	"github.com/TrueGameover/RestN/rest"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -28,7 +31,7 @@ func Init() {
 	}
 	queueSize = uint(size)
 
-	deep, err := strconv.Atoi(os.Getenv("PAGES_DEEP"))
+	deep, err := strconv.Atoi(os.Getenv("REQUEST_PAGES_DEEP"))
 	if err != nil {
 		panic(err)
 	}
@@ -46,6 +49,7 @@ func Init() {
 // @Tags SitesController
 // @Param query query string true "Your query"
 // @Produce json
+// @Success 200
 func HandleRequest(context *gin.Context) {
 	input := queryInput{}
 	response := rest.RestResponse{
@@ -71,11 +75,25 @@ func HandleRequest(context *gin.Context) {
 	}
 
 	parserService := service.ParserService{SitesRepository: repository.ISiteRepository(infrastructure.YandexSitesRepository{})}
-	waitGroup := sync.WaitGroup{}
-	sitesChannel := make(chan domain.Site, queueSize)
+	sitesWaitGroup := sync.WaitGroup{}
+	sitesChannel := make(chan string, queueSize)
 
-	parserService.StreamSites(&waitGroup, sitesChannel, input.Query, pagesDeep, perPage)
+	parserService.StreamSites(&sitesWaitGroup, sitesChannel, input.Query, pagesDeep, perPage)
 
-	waitGroup.Wait()
-	context.JSON(200, response.NormalizeResponse())
+	rpsService := service2.RpsService{
+		Hosts:       new(sync.Map),
+		SiteTracker: repository2.ISiteRequesterRepository(infrastructure2.SiteRequester{}),
+	}
+
+	emptyCtx, cancelCtx := context2.WithCancel(context2.Background())
+	rpsService.ListenForHosts(&emptyCtx, &sitesWaitGroup, sitesChannel)
+
+	sitesWaitGroup.Wait()
+	cancelCtx()
+	close(sitesChannel)
+
+	response.SetBody(rpsService.Hosts)
+	r := response.NormalizeResponse()
+
+	context.JSON(200, r)
 }

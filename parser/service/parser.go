@@ -1,7 +1,6 @@
 package service
 
 import (
-	"RevoluterraTest/parser/domain"
 	"RevoluterraTest/parser/repository"
 	"fmt"
 	"sync"
@@ -11,7 +10,7 @@ type ParserService struct {
 	SitesRepository repository.ISiteRepository
 }
 
-func (service *ParserService) StreamSites(waitGroup *sync.WaitGroup, sitesChannel chan domain.Site, query string, tryPagesCount uint, perPage uint) {
+func (service *ParserService) StreamSites(waitGroup *sync.WaitGroup, sitesChannel chan<- string, query string, tryPagesCount uint, perPage uint) {
 	for i := uint(1); i <= tryPagesCount; i++ {
 		waitGroup.Add(1)
 		go func(page uint) {
@@ -22,7 +21,10 @@ func (service *ParserService) StreamSites(waitGroup *sync.WaitGroup, sitesChanne
 			}
 
 			for _, site := range sites {
-				sitesChannel <- site
+				if len(site) > 0 {
+					waitGroup.Add(1)
+					sitesChannel <- site
+				}
 			}
 
 			waitGroup.Done()

@@ -13,6 +13,9 @@ paths:
         type: string
       produces:
       - application/json
+      responses:
+        "200":
+          description: ""
       summary: Calculate sites rps by query
       tags:
       - SitesController

@@ -40,7 +40,12 @@ var doc = `{
                         "in": "query",
                         "required": true
                     }
-                ]
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
             }
         }
     }

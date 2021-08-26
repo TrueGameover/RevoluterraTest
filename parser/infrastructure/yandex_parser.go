@@ -1,7 +1,6 @@
 package infrastructure
 
 import (
-	"RevoluterraTest/parser/domain"
 	"RevoluterraTest/parser/repository"
 	"fmt"
 	"github.com/kkhrychikov/revo-testing"
@@ -13,8 +12,8 @@ type YandexSitesRepository struct {
 	repository.ISiteRepository
 }
 
-func (rep YandexSitesRepository) GetSites(query string, page uint, limit uint) ([]domain.Site, error) {
-	var sites []domain.Site
+func (rep YandexSitesRepository) GetSites(query string, page uint, limit uint) ([]string, error) {
+	var sites []string
 	url := fmt.Sprintf(revo.BaseYandexURL, limit, page, query)
 	resp, err := http.Get(url)
 	defer func(r *http.Response) {
@@ -36,7 +35,7 @@ func (rep YandexSitesRepository) GetSites(query string, page uint, limit uint) (
 
 	parsed := revo.ParseYandexResponse(raw)
 	for _, item := range parsed.Items {
-		sites = append(sites, domain.Site{Host: item.Host})
+		sites = append(sites, item.Host)
 	}
 
 	return sites, parsed.Error

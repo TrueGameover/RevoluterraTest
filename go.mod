@@ -5,7 +5,7 @@ go 1.15
 replace github.com/kkhrychikov/revo-testing v0.0.0-20210824105316-f0e3703624a1 => ./revo
 
 require (
-	github.com/TrueGameover/RestN v0.0.0-20210818153643-01d34aa08352
+	github.com/TrueGameover/RestN v0.0.0-20210826163259-754bdd064936
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
@@ -25,7 +25,7 @@ require (
 	github.com/swaggo/swag v1.7.1
 	github.com/ugorji/go v1.2.6 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
+	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.5 // indirect
