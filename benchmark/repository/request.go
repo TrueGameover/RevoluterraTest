@@ -1,7 +1,7 @@
 package repository
 
-import "context"
+import "net/http"
 
 type ISiteRequesterRepository interface {
-	GetSiteResponseCode(context *context.Context, host string) (int, error)
+	GetSiteResponseCode(client *http.Client, host string) (int, error)
 }

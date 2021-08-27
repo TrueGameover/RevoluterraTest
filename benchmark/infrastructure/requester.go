@@ -2,8 +2,7 @@ package infrastructure
 
 import (
 	"RevoluterraTest/benchmark/repository"
-	"context"
-	"errors"
+	"github.com/hashicorp/go-multierror"
 	"io/ioutil"
 	"net/http"
 )
@@ -12,21 +11,33 @@ type SiteRequester struct {
 	repository.ISiteRequesterRepository
 }
 
-func (s SiteRequester) GetSiteResponseCode(context *context.Context, host string) (int, error) {
-	req, err := http.NewRequestWithContext(*context, http.MethodGet, host, nil)
+const Scheme = "http://"
+
+func (s SiteRequester) GetSiteResponseCode(client *http.Client, host string) (int, error) {
+	var errMain *multierror.Error
+
+	req, err := http.NewRequest(http.MethodGet, Scheme+host, nil)
 
 	if err != nil {
-		println(err)
+		errMain = multierror.Append(errMain, err)
 	}
 
-	resp, _ := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
+
+	if err != nil {
+		errMain = multierror.Append(errMain, err)
+	}
 
 	if resp != nil {
 		defer resp.Body.Close()
-		_, err = ioutil.ReadAll(resp.Body)
+		_, err := ioutil.ReadAll(resp.Body)
 
-		return resp.StatusCode, err
+		if err != nil {
+			errMain = multierror.Append(errMain, err)
+		}
+
+		return resp.StatusCode, errMain.ErrorOrNil()
 	}
 
-	return -1, errors.New("no response")
+	return 0, errMain.ErrorOrNil()
 }

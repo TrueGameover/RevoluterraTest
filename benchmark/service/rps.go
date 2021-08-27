@@ -6,10 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -18,7 +18,37 @@ type RpsService struct {
 	SiteTracker repository.ISiteRequesterRepository
 }
 
-func (service *RpsService) BenchHost(parentContext *context.Context, host string, maxRps int, requestTimeoutSeconds int) (domain.HostBenchmarkStatistic, error) {
+const bufferSize = 100
+
+type SiteRequestJob struct {
+	domain.IJob
+	Index       byte
+	SiteTracker *repository.ISiteRequesterRepository
+	Host        string
+	Created     time.Time
+	WaitTime    time.Duration
+	Client      *http.Client
+}
+
+func (s SiteRequestJob) Do() byte {
+	code, _ := (*s.SiteTracker).GetSiteResponseCode(s.Client, s.Host)
+
+	if code >= 200 && code <= 300 {
+		return s.Index
+	}
+
+	return 0
+}
+
+func (s SiteRequestJob) GetCreationTime() time.Time {
+	return s.Created
+}
+
+func (s SiteRequestJob) GetWaitTime() time.Duration {
+	return s.WaitTime
+}
+
+func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSeconds int, workersCount uint) (domain.HostBenchmarkStatistic, error) {
 	val, ok := service.Hosts.Load(host)
 
 	if !ok {
@@ -31,44 +61,58 @@ func (service *RpsService) BenchHost(parentContext *context.Context, host string
 		return domain.HostBenchmarkStatistic{}, errors.New("host has a wrong type")
 	}
 
+	requestsTotalCount := maxRps * uint(requestTimeoutSeconds)
 	sample := make([]uint32, requestTimeoutSeconds)
 	waitGroup := sync.WaitGroup{}
+	siteResponseChannel := make(chan byte, requestsTotalCount)
+	workerService := WorkerService{}
+	workerService.Init(workersCount, requestsTotalCount, siteResponseChannel)
+	workerService.Start()
+
+	timeout := time.Duration(requestTimeoutSeconds) * time.Second
 
 	// for example server can respond 5 seconds, but response on all requests
-	for i := 0; i < requestTimeoutSeconds; i++ {
-		start := time.Now()
+	for i := 1; i <= requestTimeoutSeconds; i++ {
+		client := http.Client{Timeout: timeout}
 
-		sample[i] = 0
-		ctx, cancel := context.WithTimeout(*parentContext, time.Duration(requestTimeoutSeconds)*time.Second)
-		defer cancel()
-
-		// every second
-		for j := 0; j < maxRps; j++ {
+		for j := uint(0); j < maxRps; j++ {
 			waitGroup.Add(1)
-			go func(second int) {
-				code, err := service.SiteTracker.GetSiteResponseCode(&ctx, host)
-
-				/*if err != nil {
-					fmt.Println(err)
-				}*/
-
-				if code >= 200 && code <= 302 && err == nil {
-					atomic.AddUint32(&sample[second], 1)
-				}
-
-				waitGroup.Done()
-			}(i)
-		}
-
-		elapsed := time.Since(start)
-
-		// try to be more accurate
-		if elapsed.Milliseconds() < 1000 {
-			time.Sleep(time.Duration(1000 - elapsed.Milliseconds()))
+			workerService.AddJob(SiteRequestJob{
+				Index:       byte(i),
+				SiteTracker: &service.SiteTracker,
+				Client:      &client,
+				Host:        host,
+				Created:     time.Now(),
+				WaitTime:    time.Duration(i) * time.Second,
+			})
 		}
 	}
 
-	waitGroup.Wait()
+	go func() {
+		waitGroup.Wait()
+		close(siteResponseChannel)
+	}()
+
+	var completed = false
+	for !completed {
+		select {
+		case job, status := <-siteResponseChannel:
+			if status {
+				index := uint(job)
+
+				if index > 0 {
+					sample[index-1] += 1
+				}
+				waitGroup.Done()
+
+			} else {
+				completed = true
+				break
+			}
+		}
+	}
+
+	workerService.Destroy()
 
 	sum := uint32(0)
 	for _, rps := range sample {
@@ -93,11 +137,16 @@ func (service *RpsService) ListenForHosts(context *context.Context, waitGroup *s
 		panic(err)
 	}
 
+	workersCount, err := strconv.Atoi(os.Getenv("BENCHMARK_WORKERS_PER_HOST_COUNT"))
+	if err != nil {
+		panic(err)
+	}
+
 	go func() {
 		for {
 			select {
 			case <-(*context).Done():
-				break
+				return
 			default:
 
 			}
@@ -105,7 +154,7 @@ func (service *RpsService) ListenForHosts(context *context.Context, waitGroup *s
 			select {
 			case host, ok := <-stream:
 				if !ok {
-					break
+					return
 				}
 
 				_, ok = service.Hosts.Load(host)
@@ -116,7 +165,7 @@ func (service *RpsService) ListenForHosts(context *context.Context, waitGroup *s
 					})
 
 					go func(host string, waitGroup *sync.WaitGroup) {
-						result, err := service.BenchHost(context, host, maxRps, timeout)
+						result, err := service.BenchHost(host, uint(maxRps), timeout, uint(workersCount))
 
 						if err != nil {
 							fmt.Println(err)
@@ -131,7 +180,7 @@ func (service *RpsService) ListenForHosts(context *context.Context, waitGroup *s
 					waitGroup.Done()
 				}
 			case <-(*context).Done():
-				break
+				return
 			}
 		}
 	}()
