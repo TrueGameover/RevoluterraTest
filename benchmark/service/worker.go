@@ -1,8 +1,8 @@
 package service
 
 import (
-	"RevoluterraTest/benchmark/domain"
 	"context"
+	"github.com/TrueGameover/RevoluterraTest/benchmark/domain"
 	"time"
 )
 

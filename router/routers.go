@@ -1,8 +1,8 @@
 package router
 
 import (
-	_ "RevoluterraTest/docs"
-	"RevoluterraTest/router/sites"
+	_ "github.com/TrueGameover/RevoluterraTest/docs"
+	"github.com/TrueGameover/RevoluterraTest/router/sites"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

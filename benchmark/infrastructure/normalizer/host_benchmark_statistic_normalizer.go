@@ -1,8 +1,8 @@
 package normalizer
 
 import (
-	"RevoluterraTest/benchmark/domain"
 	"github.com/TrueGameover/RestN/rest"
+	"github.com/TrueGameover/RevoluterraTest/benchmark/domain"
 )
 
 type HostBenchmarkStatisticNormalizer struct {

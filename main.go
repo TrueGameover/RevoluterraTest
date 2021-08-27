@@ -1,13 +1,13 @@
 package main
 
 import (
-	normalizer2 "RevoluterraTest/benchmark/infrastructure/normalizer"
 	"github.com/TrueGameover/RestN/normalizer"
 	"github.com/TrueGameover/RestN/rest"
+	normalizer2 "github.com/TrueGameover/RevoluterraTest/benchmark/infrastructure/normalizer"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
-import "RevoluterraTest/router"
+import "github.com/TrueGameover/RevoluterraTest/router"
 
 // @title RpsChecked
 // @version 0.01

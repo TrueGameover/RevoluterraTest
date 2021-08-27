@@ -1,11 +1,11 @@
 package service
 
 import (
-	"RevoluterraTest/benchmark/domain"
-	"RevoluterraTest/benchmark/repository"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/TrueGameover/RevoluterraTest/benchmark/domain"
+	"github.com/TrueGameover/RevoluterraTest/benchmark/repository"
 	"net/http"
 	"os"
 	"strconv"

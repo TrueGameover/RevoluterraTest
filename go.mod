@@ -1,4 +1,4 @@
-module RevoluterraTest
+module github.com/TrueGameover/RevoluterraTest
 
 go 1.15
 

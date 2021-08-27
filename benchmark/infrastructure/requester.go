@@ -1,7 +1,7 @@
 package infrastructure
 
 import (
-	"RevoluterraTest/benchmark/repository"
+	"github.com/TrueGameover/RevoluterraTest/benchmark/repository"
 	"github.com/hashicorp/go-multierror"
 	"io/ioutil"
 	"net/http"

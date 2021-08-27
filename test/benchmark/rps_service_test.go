@@ -1,11 +1,11 @@
 package benchmark
 
 import (
-	"RevoluterraTest/benchmark/domain"
-	infrastructure2 "RevoluterraTest/benchmark/infrastructure"
-	repository2 "RevoluterraTest/benchmark/repository"
-	service2 "RevoluterraTest/benchmark/service"
 	"fmt"
+	"github.com/TrueGameover/RevoluterraTest/benchmark/domain"
+	infrastructure2 "github.com/TrueGameover/RevoluterraTest/benchmark/infrastructure"
+	repository2 "github.com/TrueGameover/RevoluterraTest/benchmark/repository"
+	service2 "github.com/TrueGameover/RevoluterraTest/benchmark/service"
 	"github.com/stretchr/testify/require"
 	"sync"
 	"testing"

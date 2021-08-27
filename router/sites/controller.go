@@ -1,14 +1,14 @@
 package sites
 
 import (
-	infrastructure2 "RevoluterraTest/benchmark/infrastructure"
-	repository2 "RevoluterraTest/benchmark/repository"
-	service2 "RevoluterraTest/benchmark/service"
-	"RevoluterraTest/parser/infrastructure"
-	"RevoluterraTest/parser/repository"
-	"RevoluterraTest/parser/service"
 	context2 "context"
 	"github.com/TrueGameover/RestN/rest"
+	infrastructure2 "github.com/TrueGameover/RevoluterraTest/benchmark/infrastructure"
+	repository2 "github.com/TrueGameover/RevoluterraTest/benchmark/repository"
+	service2 "github.com/TrueGameover/RevoluterraTest/benchmark/service"
+	"github.com/TrueGameover/RevoluterraTest/parser/infrastructure"
+	"github.com/TrueGameover/RevoluterraTest/parser/repository"
+	"github.com/TrueGameover/RevoluterraTest/parser/service"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"os"

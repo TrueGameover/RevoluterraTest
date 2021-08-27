@@ -1,8 +1,8 @@
 package infrastructure
 
 import (
-	"RevoluterraTest/parser/repository"
 	"fmt"
+	"github.com/TrueGameover/RevoluterraTest/parser/repository"
 	"github.com/kkhrychikov/revo-testing"
 	"io/ioutil"
 	"net/http"

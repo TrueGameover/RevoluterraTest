@@ -1,8 +1,8 @@
 package service
 
 import (
-	"RevoluterraTest/parser/repository"
 	"fmt"
+	"github.com/TrueGameover/RevoluterraTest/parser/repository"
 	"sync"
 )
 
