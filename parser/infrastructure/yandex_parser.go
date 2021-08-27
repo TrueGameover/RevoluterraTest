@@ -17,8 +17,10 @@ func (rep YandexSitesRepository) GetSites(query string, page uint, limit uint) (
 	url := fmt.Sprintf(revo.BaseYandexURL, limit, page, query)
 	resp, err := http.Get(url)
 	defer func(r *http.Response) {
-		if err := r.Body.Close(); err != nil {
-			fmt.Println(err)
+		if r != nil {
+			if err := r.Body.Close(); err != nil {
+				fmt.Println(err)
+			}
 		}
 
 	}(resp)
