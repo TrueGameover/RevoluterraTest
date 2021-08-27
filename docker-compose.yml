@@ -1,0 +1,30 @@
+version: "3.3"
+
+services:
+  app:
+    build:
+      dockerfile: docker/Dockerfile
+      context: .
+      args:
+        DOCKER_UID: ${DOCKER_UID}
+    user: ${DOCKER_UID}
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/go/src/app
+
+    networks:
+      default:
+        ipv4_address: 172.0.16.2
+
+
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.0.16.1/24
+
+
+
+
