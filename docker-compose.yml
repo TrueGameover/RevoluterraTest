@@ -12,7 +12,6 @@ services:
       - "5000:5000"
     volumes:
       - .:/go/src/app
-
     networks:
       default:
         ipv4_address: 172.0.16.2
@@ -24,7 +23,3 @@ networks:
       driver: default
       config:
         - subnet: 172.0.16.1/24
-
-
-
-

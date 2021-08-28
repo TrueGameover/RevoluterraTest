@@ -17,7 +17,7 @@ func (tripper defaultHeaders) RoundTrip(r *http.Request) (*http.Response, error)
 	r.Header.Add("Accept-Encoding", "identity")
 	r.Header.Add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7")
 	r.Header.Add("Cache-Control", "no-cache")
-	r.Header.Add("Referer", "https://www.google.com/")
+	r.Header.Add("Referer", "https://yandex.ru/")
 
 	for _, cookie := range tripper.cookies {
 		r.AddCookie(&cookie)
