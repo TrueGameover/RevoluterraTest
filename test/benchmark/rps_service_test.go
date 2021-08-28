@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestBenchHost(t *testing.T) {
+func TestBenchHostGoogle(t *testing.T) {
 	rpsService := service2.RpsService{
 		Hosts:       new(sync.Map),
 		SiteTracker: repository2.ISiteRequesterRepository(infrastructure2.SiteRequester{}),
@@ -20,7 +20,23 @@ func TestBenchHost(t *testing.T) {
 	const host = "google.com"
 	rpsService.Hosts.Store(host, domain.HostBenchmarkStatistic{})
 
-	statistic, _ := rpsService.BenchHost(host, 10000, 5, 100)
+	statistic, _ := rpsService.BenchHost(host, 1000, 5, 10000)
+
+	fmt.Println(statistic.Rps.AverageRps)
+
+	require.Equal(t, false, statistic.InProgress)
+}
+
+func TestBenchHostAvito(t *testing.T) {
+	rpsService := service2.RpsService{
+		Hosts:       new(sync.Map),
+		SiteTracker: repository2.ISiteRequesterRepository(infrastructure2.SiteRequester{}),
+	}
+
+	const host = "avito.ru"
+	rpsService.Hosts.Store(host, domain.HostBenchmarkStatistic{})
+
+	statistic, _ := rpsService.BenchHost(host, 500, 5, 1000)
 
 	fmt.Println(statistic.Rps.AverageRps)
 

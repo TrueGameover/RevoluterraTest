@@ -27,6 +27,7 @@ func (service *ParserService) StreamSites(waitGroup *sync.WaitGroup, sitesChanne
 				}
 			}
 
+			fmt.Printf("Sites count = %d\n", len(sites))
 			waitGroup.Done()
 		}(i)
 	}

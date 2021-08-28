@@ -46,12 +46,14 @@ func (w *WorkerService) runWorker() {
 				}
 
 				targetStart := job.GetCreationTime().Add(job.GetWaitTime())
+				now := time.Now()
+
+				if targetStart.After(now) {
+					time.Sleep(targetStart.Sub(now))
+				}
 
 				if targetStart.Before(time.Now()) {
 					w.resultsChannel <- job.Do()
-
-				} else {
-					w.queue <- job
 				}
 			}
 		}

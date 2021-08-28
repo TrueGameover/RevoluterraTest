@@ -25,7 +25,7 @@ func (rep YandexSitesRepository) GetSites(query string, page uint, limit uint) (
 	defer func(r *http.Response) {
 		if r != nil {
 			if err := r.Body.Close(); err != nil {
-				fmt.Println(err)
+				//fmt.Println(err)
 			}
 		}
 

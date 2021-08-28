@@ -19,8 +19,6 @@ type RpsService struct {
 	SiteTracker repository.ISiteRequesterRepository
 }
 
-const bufferSize = 100
-
 type SiteRequestJob struct {
 	domain.IJob
 	Index       byte
@@ -34,7 +32,7 @@ type SiteRequestJob struct {
 func (s SiteRequestJob) Do() byte {
 	code, _ := (*s.SiteTracker).GetSiteResponseCode(s.Client, s.Host)
 
-	if code >= 200 && code <= 300 {
+	if code >= 200 && code <= 302 {
 		return s.Index
 	}
 
@@ -71,11 +69,9 @@ func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSec
 	workerService.Start()
 
 	timeout := time.Duration(requestTimeoutSeconds) * time.Second
+	client := client2.CreateHttpClient(timeout)
 
-	// for example server can respond 5 seconds, but response on all requests
 	for i := 1; i <= requestTimeoutSeconds; i++ {
-		client := client2.CreateHttpClient(timeout)
-
 		for j := uint(0); j < maxRps; j++ {
 			waitGroup.Add(1)
 			workerService.AddJob(SiteRequestJob{
@@ -84,7 +80,7 @@ func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSec
 				Client:      client,
 				Host:        host,
 				Created:     time.Now(),
-				WaitTime:    time.Duration(i) * time.Second,
+				WaitTime:    time.Duration(i-1) * time.Second,
 			})
 		}
 	}
@@ -114,6 +110,7 @@ func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSec
 	}
 
 	workerService.Destroy()
+	client.CloseIdleConnections()
 
 	sum := uint32(0)
 	for _, rps := range sample {
@@ -123,6 +120,8 @@ func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSec
 	averageRps := sum / uint32(len(sample))
 	stats.Rps.AverageRps = uint(averageRps)
 	stats.InProgress = false
+
+	fmt.Printf("%s = %d\n", host, stats.Rps.AverageRps)
 
 	return stats, nil
 }
