@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/TrueGameover/RevoluterraTest/benchmark/domain"
 	"github.com/TrueGameover/RevoluterraTest/benchmark/repository"
+	client2 "github.com/TrueGameover/RevoluterraTest/client"
 	"net/http"
 	"os"
 	"strconv"
@@ -73,14 +74,14 @@ func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSec
 
 	// for example server can respond 5 seconds, but response on all requests
 	for i := 1; i <= requestTimeoutSeconds; i++ {
-		client := http.Client{Timeout: timeout}
+		client := client2.CreateHttpClient(timeout)
 
 		for j := uint(0); j < maxRps; j++ {
 			waitGroup.Add(1)
 			workerService.AddJob(SiteRequestJob{
 				Index:       byte(i),
 				SiteTracker: &service.SiteTracker,
-				Client:      &client,
+				Client:      client,
 				Host:        host,
 				Created:     time.Now(),
 				WaitTime:    time.Duration(i) * time.Second,
