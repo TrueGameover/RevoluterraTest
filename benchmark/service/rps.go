@@ -33,7 +33,7 @@ type SiteRequestJob struct {
 func (s SiteRequestJob) Do() byte {
 	code, _ := (*s.SiteTracker).GetSiteResponseCode(s.Client, s.Host)
 
-	if code >= 200 && code <= 302 {
+	if (code >= 200 && code <= 302) || code == 403 {
 		return s.Index
 	}
 
@@ -96,6 +96,9 @@ func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSec
 				if currentRps > maxRps {
 					currentRps = maxRps
 				}
+
+			} else {
+				break
 			}
 		}
 
