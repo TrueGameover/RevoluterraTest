@@ -7,7 +7,7 @@ import (
 
 type defaultHeaders struct {
 	roundTripper http.RoundTripper
-	cookies      []*http.Cookie
+	cookies      []http.Cookie
 }
 
 func (tripper defaultHeaders) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -19,11 +19,16 @@ func (tripper defaultHeaders) RoundTrip(r *http.Request) (*http.Response, error)
 	r.Header.Add("Cache-Control", "no-cache")
 
 	for _, cookie := range tripper.cookies {
-		r.AddCookie(cookie)
+		r.AddCookie(&cookie)
 	}
 
 	resp, err := tripper.roundTripper.RoundTrip(r)
-	tripper.cookies = resp.Cookies()
+
+	if len(tripper.cookies) == 0 && resp != nil {
+		for _, cookie := range resp.Cookies() {
+			tripper.cookies = append(tripper.cookies, *cookie)
+		}
+	}
 
 	return resp, err
 }
