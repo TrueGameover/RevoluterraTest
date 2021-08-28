@@ -11,7 +11,7 @@ type SiteRequester struct {
 	repository.ISiteRequesterRepository
 }
 
-const Scheme = "http://"
+const Scheme = "https://"
 
 func (s SiteRequester) GetSiteResponseCode(client *http.Client, host string) (int, error) {
 	var errMain *multierror.Error

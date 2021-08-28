@@ -7,6 +7,7 @@ import (
 	"github.com/TrueGameover/RevoluterraTest/benchmark/domain"
 	"github.com/TrueGameover/RevoluterraTest/benchmark/repository"
 	client2 "github.com/TrueGameover/RevoluterraTest/client"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -47,6 +48,9 @@ func (s SiteRequestJob) GetWaitTime() time.Duration {
 	return s.WaitTime
 }
 
+const SampleLength = 10
+const BadThreshold = 50
+
 func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSeconds int, workersCount uint) (domain.HostBenchmarkStatistic, error) {
 	val, ok := service.Hosts.Load(host)
 
@@ -60,37 +64,48 @@ func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSec
 		return domain.HostBenchmarkStatistic{}, errors.New("host has a wrong type")
 	}
 
-	requestsTotalCount := maxRps * uint(requestTimeoutSeconds)
-	sample := make([]uint32, requestTimeoutSeconds)
+	rpsStep := uint(maxRps / SampleLength)
+	requestsTotalCount := rpsStep*uint(SampleLength) + 1
+	sample := make([]uint, SampleLength)
 	waitGroup := sync.WaitGroup{}
 	siteResponseChannel := make(chan byte, requestsTotalCount)
 	workerService := WorkerService{}
 	workerService.Init(workersCount, requestsTotalCount, siteResponseChannel)
 	workerService.Start()
 
-	timeout := time.Duration(requestTimeoutSeconds) * time.Second
-	client := client2.CreateHttpClient(timeout)
+	go func(ws *WorkerService) {
+		timeout := time.Duration(requestTimeoutSeconds) * time.Second
+		client := client2.CreateHttpClient(timeout)
+		currentRps := uint(1)
+		for i := 1; i <= SampleLength; i++ {
+			for j := uint(0); j < currentRps; j++ {
+				waitGroup.Add(1)
+				ws.AddJob(SiteRequestJob{
+					Index:       byte(i),
+					SiteTracker: &service.SiteTracker,
+					Client:      client,
+					Host:        host,
+					Created:     time.Now(),
+					WaitTime:    time.Duration(i-1) * time.Second,
+				}, true)
+			}
 
-	for i := 1; i <= requestTimeoutSeconds; i++ {
-		for j := uint(0); j < maxRps; j++ {
-			waitGroup.Add(1)
-			workerService.AddJob(SiteRequestJob{
-				Index:       byte(i),
-				SiteTracker: &service.SiteTracker,
-				Client:      client,
-				Host:        host,
-				Created:     time.Now(),
-				WaitTime:    time.Duration(i-1) * time.Second,
-			})
+			if currentRps < maxRps {
+				currentRps = uint(math.Pow(2, float64(i)))
+
+				if currentRps > maxRps {
+					currentRps = maxRps
+				}
+			}
 		}
-	}
 
-	go func() {
 		waitGroup.Wait()
 		close(siteResponseChannel)
-	}()
+		client.CloseIdleConnections()
+	}(&workerService)
 
 	var completed = false
+	badCount := 0
 	for !completed {
 		select {
 		case job, status := <-siteResponseChannel:
@@ -99,8 +114,17 @@ func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSec
 
 				if index > 0 {
 					sample[index-1] += 1
+					badCount = 0
+
+				} else {
+					badCount++
 				}
 				waitGroup.Done()
+
+				if badCount > BadThreshold {
+					completed = true
+					break
+				}
 
 			} else {
 				completed = true
@@ -109,16 +133,17 @@ func (service *RpsService) BenchHost(host string, maxRps uint, requestTimeoutSec
 		}
 	}
 
-	workerService.Destroy()
-	client.CloseIdleConnections()
+	workerService.Destroy(false)
 
-	sum := uint32(0)
+	max := uint(0)
 	for _, rps := range sample {
-		sum += rps
+		if rps > max {
+			max = rps
+		}
 	}
 
-	averageRps := sum / uint32(len(sample))
-	stats.Rps.AverageRps = uint(averageRps)
+	//averageRps := sum / uint32(len(sample))
+	stats.Rps.AverageRps = max
 	stats.InProgress = false
 
 	fmt.Printf("%s = %d\n", host, stats.Rps.AverageRps)

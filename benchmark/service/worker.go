@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/TrueGameover/RevoluterraTest/benchmark/domain"
+	"sync/atomic"
 	"time"
 )
 
@@ -12,12 +13,16 @@ type WorkerService struct {
 	resultsChannel chan<- byte
 	cancelContext  context.CancelFunc
 	startTime      time.Time
+	needClose      uint32
+	closed         uint32
 }
 
 func (w *WorkerService) Init(workersCount uint, queueSize uint, completeChannel chan<- byte) {
 	w.queue = make(chan domain.IJob, queueSize)
 	w.resultsChannel = completeChannel
 	w.ctx, w.cancelContext = context.WithCancel(context.Background())
+	w.needClose = 0
+	w.closed = 0
 
 	for i := uint(0); i < workersCount; i++ {
 		w.runWorker()
@@ -52,19 +57,39 @@ func (w *WorkerService) runWorker() {
 					time.Sleep(targetStart.Sub(now))
 				}
 
-				if targetStart.Before(time.Now()) {
-					w.resultsChannel <- job.Do()
-				}
+				w.resultsChannel <- job.Do()
 			}
 		}
 	}()
 }
 
-func (w *WorkerService) Destroy() {
+func (w *WorkerService) Destroy(force bool) {
 	w.cancelContext()
-	close(w.queue)
+	atomic.StoreUint32(&w.needClose, 1)
+
+	if force {
+		go func() {
+			val := atomic.LoadUint32(&w.needClose)
+
+			if val == 1 {
+				atomic.StoreUint32(&w.closed, 1)
+				close(w.queue)
+			}
+		}()
+	}
 }
 
-func (w *WorkerService) AddJob(job domain.IJob) {
-	w.queue <- job
+func (w *WorkerService) AddJob(job domain.IJob, canClose bool) {
+	needClose := atomic.LoadUint32(&w.needClose)
+	closed := atomic.LoadUint32(&w.closed)
+
+	if needClose == 0 && closed == 0 {
+		w.queue <- job
+
+	} else {
+		if canClose && closed == 0 {
+			atomic.StoreUint32(&w.closed, 1)
+			close(w.queue)
+		}
+	}
 }
